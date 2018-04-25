@@ -72,14 +72,11 @@ import (
 )
 func main(){
     ...
-	//zipkin
-	collector, err := zipkin.NewHTTPCollector("http://localhost:9411/api/v1/spans")
-	if err != nil {
-		panic(err)
-		return
+	etcdConfg := etcd.Config{
+		Endpoints: []string{
+			"http://127.0.0.1:2379",
+		},
 	}
-	defer collector.Close()
-
 	r := registry.NewResolver("/exampleservice.v1", "example", etcdConfg)
 	b := grpclb.NewBalancer(r, grpclb.NewRoundRobinSelector())
 	grpcDialOpts := []grpc.DialOption{
