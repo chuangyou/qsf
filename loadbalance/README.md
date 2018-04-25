@@ -22,7 +22,7 @@ server:
 ```go
 package main
 import (
-    etcd "github.com/coreos/etcd/clientv3"
+	etcd "github.com/coreos/etcd/clientv3"
 	registry "github.com/chuangyou/qsf/loadbalance/registry/etcd"
 	"time"
 	...
