@@ -7,5 +7,5 @@ package example.v1;
    string value = 1;
  }
  service ExampleService {
-  rpc GetExample(GetExampleRequest) returns (Example);
+  rpc GetExample(GetExampleRequest) returns (Example){}
  }
