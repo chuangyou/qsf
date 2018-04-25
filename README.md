@@ -17,7 +17,11 @@ QSF是基于GRPC生态圈打造的一个简单、易用、功能强大的服务�
 > * API网关
         目前接入GRPC生态圈的GRPC-GATEWAY。
 # 快速开始
-1、安装ProtocolBuffers
+1、安装GRPC-GO
+
+    go get -u google.golang.org/grpc
+
+2、安装ProtocolBuffers
 
     mkdir tmp
     cd tmp
@@ -29,19 +33,19 @@ QSF是基于GRPC生态圈打造的一个简单、易用、功能强大的服务�
     make check
     sudo make install
     
-2、安装proto,protoc-gen-go
+3、安装proto,protoc-gen-go
 
     go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
 
-3、安装GRPC-API-GATEWAY（需要网关就必须安装此依赖）
+4、安装GRPC-API-GATEWAY（需要网关就必须安装此依赖）
 
     go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
     go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 
-4、安装QSF
+5、安装QSF
 
     go get github.com/chuangyou/qsf
-5、hellowolrd（GRPC服务例子）
+6、hellowolrd（GRPC服务例子）
 
 proto:
 ```proto
