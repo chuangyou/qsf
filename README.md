@@ -33,11 +33,6 @@ QSF是福建创游网络基于GRPC生态圈打造的一个简单、易用、功�
 
     go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
 
-3、安装GRPC-API-GATEWAY（需要网关就必须安装此依赖）
-
-    go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-    go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-
-4、安装QSF
+3、安装QSF
 
     go get github.com/chuangyou/qsf
