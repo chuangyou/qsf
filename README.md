@@ -41,7 +41,7 @@ QSF是基于GRPC生态圈打造的一个简单、易用、功能强大的服务�
 4、安装QSF
 
     go get github.com/chuangyou/qsf
-5、hellowolrd
+5、hellowolrd（GRPC服务例子）
 
 proto:
 ```proto
