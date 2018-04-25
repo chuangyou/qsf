@@ -7,10 +7,9 @@ import (
 	"strconv"
 
 	"github.com/chuangyou/qsf/grpc_error"
-	"github.com/chuangyou/ratelimit"
 )
 
-func UnaryServerInterceptor(bucket *ratelimit.Bucket) grpc.UnaryServerInterceptor {
+func UnaryServerInterceptor(bucket *Bucket) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		if bucket.TakeAvailable(1) > 0 {
 			return handler(ctx, req)
@@ -19,7 +18,7 @@ func UnaryServerInterceptor(bucket *ratelimit.Bucket) grpc.UnaryServerIntercepto
 		}
 	}
 }
-func StreamServerInterceptor(bucket *ratelimit.Bucket) grpc.StreamServerInterceptor {
+func StreamServerInterceptor(bucket *Bucket) grpc.StreamServerInterceptor {
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		if bucket.TakeAvailable(1) > 0 {
 			return handler(srv, stream)
