@@ -1,0 +1,11 @@
+syntax = "proto3";
+package example.v1;
+ message Example {
+   string value = 1;
+ }
+ message GetExampleRequest {
+   string value = 1;
+ }
+ service ExampleService {
+  rpc GetExample(GetExampleRequest) returns (Example);
+ }

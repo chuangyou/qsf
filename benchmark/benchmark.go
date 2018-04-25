@@ -11,7 +11,6 @@ import (
 	"errors"
 
 	"github.com/chuangyou/qsf/breaker"
-	example_spb "github.com/chuangyou/qujiservice/example/v1"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/montanaflynn/stats"
 	"github.com/rubyist/circuitbreaker"
@@ -89,10 +88,10 @@ func main() {
 			conn, _ := grpc.Dial(*host, grpOpts...)
 
 			defer conn.Close()
-			xclient := example_spb.NewExampleServiceClient(conn)
+			xclient := NewExampleServiceClient(conn)
 			//warmup
 			for j := 0; j < 5; j++ {
-				xclient.GetExample(context.Background(), &example_spb.GetExampleRequest{Value: "test"})
+				xclient.GetExample(context.Background(), &GetExampleRequest{Value: "test"})
 			}
 
 			startWg.Done()
@@ -100,7 +99,7 @@ func main() {
 
 			for j := 0; j < m; j++ {
 				t := time.Now().UnixNano()
-				_, err := xclient.GetExample(context.Background(), &example_spb.GetExampleRequest{Value: "test" + strconv.Itoa(j)})
+				_, err := xclient.GetExample(context.Background(), &GetExampleRequest{Value: "test" + strconv.Itoa(j)})
 
 				t = time.Now().UnixNano() - t
 
