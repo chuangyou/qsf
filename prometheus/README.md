@@ -1,23 +1,11 @@
-# Go gRPC Interceptors for Prometheus monitoring 
-
-[![Travis Build](https://travis-ci.org/grpc-ecosystem/go-grpc-prometheus.svg)](https://travis-ci.org/grpc-ecosystem/go-grpc-prometheus)
-[![Go Report Card](https://goreportcard.com/badge/github.com/grpc-ecosystem/go-grpc-prometheus)](http://goreportcard.com/report/grpc-ecosystem/go-grpc-prometheus)
-[![GoDoc](http://img.shields.io/badge/GoDoc-Reference-blue.svg)](https://godoc.org/github.com/grpc-ecosystem/go-grpc-prometheus)
-[![SourceGraph](https://sourcegraph.com/github.com/grpc-ecosystem/go-grpc-prometheus/-/badge.svg)](https://sourcegraph.com/github.com/grpc-ecosystem/go-grpc-prometheus/?badge)
-[![codecov](https://codecov.io/gh/grpc-ecosystem/go-grpc-prometheus/branch/master/graph/badge.svg)](https://codecov.io/gh/grpc-ecosystem/go-grpc-prometheus)
-[![Apache 2.0 License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-
+﻿# Go gRPC Interceptors for Prometheus monitoring 
 [Prometheus](https://prometheus.io/) monitoring for your [gRPC Go](https://github.com/grpc/grpc-go) servers and clients.
-
-A sister implementation for [gRPC Java](https://github.com/grpc/grpc-java) (same metrics, same semantics) is in [grpc-ecosystem/java-grpc-prometheus](https://github.com/grpc-ecosystem/java-grpc-prometheus).
 
 ## Interceptors
 
 [gRPC Go](https://github.com/grpc/grpc-go) recently acquired support for Interceptors, i.e. middleware that is executed
 by a gRPC Server before the request is passed onto the user's application logic. It is a perfect way to implement
 common patterns: auth, logging and... monitoring.
-
-To use Interceptors in chains, please see [`go-grpc-middleware`](https://github.com/mwitkow/go-grpc-middleware).
 
 ## Usage
 
@@ -26,7 +14,7 @@ There are two types of interceptors: client-side and server-side. This package p
 ### Server-side
 
 ```go
-import "github.com/grpc-ecosystem/go-grpc-prometheus"
+import "github.com/chuangyou/qsf/prometheus"
 ...
     // Initialize your gRPC server's interceptor.
     myServer := grpc.NewServer(
@@ -45,7 +33,7 @@ import "github.com/grpc-ecosystem/go-grpc-prometheus"
 ### Client-side
 
 ```go
-import "github.com/grpc-ecosystem/go-grpc-prometheus"
+import ""github.com/chuangyou/qsf/prometheus"
 ...
    clientConn, err = grpc.Dial(
        address,
@@ -241,7 +229,3 @@ e.g. "less than 1% of requests are slower than 250ms".
 ## Status
 
 This code has been used since August 2015 as the basis for monitoring of *production* gRPC micro services  at [Improbable](https://improbable.io).
-
-## License
-
-`go-grpc-prometheus` is released under the Apache 2.0 license. See the [LICENSE](LICENSE) file for details.
