@@ -86,7 +86,7 @@ func main(){
 	grpcDialOpts := []grpc.DialOption{
     	grpc.WithUnaryInterceptor(
     		grpc.WithInsecure(),
-		    grpc.WithBalancer(b),
+		grpc.WithBalancer(b),
     	),
     }
     grpc.Dial("service addr",grpcDialOpts)
