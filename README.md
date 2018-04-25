@@ -1,4 +1,4 @@
-# QSF - 服务治理框架
+﻿# QSF - 服务治理框架
 
 ------
 
@@ -42,3 +42,20 @@ QSF是福建创游网络基于GRPC生态圈打造的一个简单、易用、功�
 
     go get github.com/chuangyou/qsf
 5、例子（后续将陆续更新）
+
+ - [熔断器][1]
+ - [API网关][2]
+ - [服务发现][3]
+ - [负载均衡][4]
+ - [服务监控][5]
+ - [服务限流][6]
+ - [分布式链路追踪][7]
+
+
+  [1]: https://github.com/chuangyou/qsf/tree/master/breaker
+  [2]: https://github.com/chuangyou/qsf/tree/master/gateway
+  [3]: https://github.com/chuangyou/qsf/tree/master/loadbalance
+  [4]: https://github.com/chuangyou/qsf/tree/master/loadbalance
+  [5]: https://github.com/chuangyou/qsf/tree/master/prometheus
+  [6]: https://github.com/chuangyou/qsf/tree/master/ratelimit
+  [7]: https://github.com/chuangyou/qsf/tree/master/tracing
