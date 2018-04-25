@@ -1,4 +1,4 @@
-package grpc_rate_limiting
+package ratelimit
 
 import (
 	"math"
