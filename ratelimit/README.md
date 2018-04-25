@@ -24,7 +24,7 @@
 
 使用方法
 ----
-
+```go
     package main
     import (
         "github.com/chuangyou/qsf/ratelimit"
@@ -43,3 +43,4 @@
         //registe service
         ...
     }
+```

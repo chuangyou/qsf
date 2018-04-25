@@ -19,7 +19,7 @@
 接下来将演示如何在QSF中使用ZIPKIN
 ---------------------
 client:
-
+```go
     package main
     import (
         zipkin "github.com/openzipkin/zipkin-go-opentracing"
@@ -58,9 +58,9 @@ client:
         grpc.Dial("service addr",grpcDialOpts)
         ...
     }
-
+```
 server:
-
+```go
     package main
     import (
         zipkin "github.com/openzipkin/zipkin-go-opentracing"
@@ -88,7 +88,7 @@ server:
     		panic(err)
     	}
     	opentracing.InitGlobalTracer(tracer)
-         s := grpc.NewServer(
+        s := grpc.NewServer(
             grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
     			grpc.UnaryServerInterceptor(otgrpc.OpenTracingServerInterceptor(tracer,otgrpc.LogPayloads())),
     		)),
@@ -96,6 +96,6 @@ server:
         //registe service
         ...
     }
-
+```
 
 

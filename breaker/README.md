@@ -22,29 +22,32 @@ API接口可用性降低
 为了解决上述问题，服务熔断的思想被提出来。类似现实世界中的“保险丝”，当某个异常条件被触发，直接熔断整个服务，而不是一直等到此服务超时。 
 熔断的触发条件可以依据不同的场景有所不同，比如统计一个时间窗口内失败的调用次数。
 
-使用方法
+使用方法：
 -----
-    package main
-    import (
-        "github.com/chuangyou/qsf/breaker"
-    	"github.com/grpc-ecosystem/go-grpc-middleware"
-    	...
-    )
-    func main(){
-        ...
-        //最后100个调用结果采样，95%失败启动熔断器
-        breakerInterceptor := breaker.NewRateBreaker(0.95, 100) 
-        grpcDialOpts := []grpc.DialOption{
-        	grpc.WithUnaryInterceptor(
-        		grpc.WithInsecure(),
-        		grpc_middleware.ChainUnaryClient(
-        			breaker.UnaryClientInterceptor(breakerInterceptor),
-        		),
-        	),
-        }
-        grpc.Dial("service addr",grpcDialOpts)
-        ...
+
+```go
+package main
+import (
+    "github.com/chuangyou/qsf/breaker"
+	"github.com/grpc-ecosystem/go-grpc-middleware"
+	...
+)
+func main(){
+    ...
+    //最后100个调用结果采样，95%失败启动熔断器
+    breakerInterceptor := breaker.NewRateBreaker(0.95, 100) 
+    grpcDialOpts := []grpc.DialOption{
+    	grpc.WithUnaryInterceptor(
+    		grpc.WithInsecure(),
+    		grpc_middleware.ChainUnaryClient(
+    			breaker.UnaryClientInterceptor(breakerInterceptor),
+    		),
+    	),
     }
+    grpc.Dial("service addr",grpcDialOpts)
+    ...
+}
+```
 
 
 
