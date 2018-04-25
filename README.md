@@ -16,3 +16,24 @@ QSF是福建创游网络基于GRPC生态圈打造的一个简单、易用、功�
         目前支持随机、轮询、权重等负载均衡算法，支持限流、熔断、降级等服务保护手段，支持基于prometheus实现的服务监控（可用grafana展示以及做告警），支持基于opentracing实现的服务调用链追踪。
 > * API网关
         目前接入GRPC生态圈的GRPC-GATEWAY（对其进行了适当的二次开发，更适用于本框架）。
+# 快速开始
+1、安装ProtocolBuffers
+
+    mkdir tmp
+    cd tmp
+    git clone https://github.com/google/protobuf
+    cd protobuf
+    ./autogen.sh
+    ./configure
+    make
+    make check
+    sudo make install
+    
+2、安装proto,protoc-gen-go
+
+    go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
+
+3、安装GRPC-API-GATEWAY（按需）
+
+    go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+    go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
