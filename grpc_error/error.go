@@ -5,14 +5,13 @@ import (
 
 	"net/http"
 
-	"github.com/chuangyou/qsf/gateway/runtime"
+	"github.com/chuangyou/qsf2/plugin/gateway/runtime"
 	dpb "github.com/golang/protobuf/ptypes/duration"
+	json "github.com/pquerna/ffjson/ffjson"
+	"golang.org/x/net/context"
 	epb "google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	json "github.com/pquerna/ffjson/ffjson"
-	"golang.org/x/net/context"
 )
 
 type ErrorJson struct {
@@ -33,18 +32,25 @@ func CustomHTTPError(ctx context.Context, _ *runtime.ServeMux, marshaler runtime
 	var (
 		data        []byte
 		internalErr error
+		httpStauts  int
+		errorJson   ErrorJson
 	)
-	httpStauts, errorJson := ParseError(err)
-	if errorJson.Code == int32(codes.Unavailable) {
-		errorJson.Message = codes.Unavailable.String()
-	}
-	data, internalErr = json.Marshal(errorJson)
-	if internalErr != nil {
-		w.WriteHeader(runtime.HTTPStatusFromCode(codes.Internal))
-		w.Write([]byte("{\"code\":" + strconv.Itoa(int(codes.Internal)) + ",\"error\":\"" + codes.Internal.String() + "\"}"))
+	httpStauts, errorJson = ParseError(err)
+	if httpStauts == 504 {
+		w.WriteHeader(runtime.HTTPStatusFromCode(codes.Unavailable))
+		w.Write([]byte("{\"code\":" + strconv.Itoa(int(codes.Unavailable)) + ",\"error\":\"" + codes.Unavailable.String() + "\"}"))
 	} else {
-		w.WriteHeader(httpStauts)
-		w.Write(data)
+		if errorJson.Code == int32(codes.Unavailable) {
+			errorJson.Message = codes.Unavailable.String()
+		}
+		data, internalErr = json.Marshal(errorJson)
+		if internalErr != nil {
+			w.WriteHeader(runtime.HTTPStatusFromCode(codes.Internal))
+			w.Write([]byte("{\"code\":" + strconv.Itoa(int(codes.Internal)) + ",\"error\":\"" + codes.Internal.String() + "\"}"))
+		} else {
+			w.WriteHeader(httpStauts)
+			w.Write(data)
+		}
 	}
 }
 
@@ -58,11 +64,11 @@ func Unauthenticated() error {
 }
 
 //403 PERMISSION_DENIED 这可能是因为客户端没有权限
-func PermissionDenied() error {
+func PermissionDenied(message string) error {
 	var (
 		st *status.Status
 	)
-	st = status.New(codes.PermissionDenied, codes.PermissionDenied.String())
+	st = status.New(codes.PermissionDenied, message)
 	return st.Err()
 }
 
