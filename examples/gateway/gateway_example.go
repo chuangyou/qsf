@@ -1,14 +1,15 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"time"
 
-	"github.com/chuangyou/qsf2/client"
-	spb "github.com/chuangyou/qsf2/examples/pb"
-	"github.com/chuangyou/qsf2/grpc_error"
-	"github.com/chuangyou/qsf2/plugin/gateway/runtime"
-	etcd "github.com/coreos/etcd/clientv3"
+	"github.com/chuangyou/qsf/client"
+	spb "github.com/chuangyou/qsf/examples/pb"
+	"github.com/chuangyou/qsf/grpc_error"
+	"github.com/chuangyou/qsf/plugin/breaker"
+	"github.com/chuangyou/qsf/plugin/gateway/runtime"
 	"github.com/golang/protobuf/proto"
 	"github.com/opentracing/opentracing-go"
 	zipkin "github.com/openzipkin/zipkin-go-opentracing"
@@ -17,8 +18,17 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+var (
+	BreakerRate     = float64(0.95)
+	BreakMinSamples = int64(100)
+)
+
+const (
+	ZIPKIN_HTTP_ENDPOINT      = "http://127.0.0.1:9411/api/v1/spans"
+	ZIPKIN_RECORDER_HOST_PORT = "127.0.0.1:0"
+)
+
 func main() {
-	//使用网关
 	var (
 		mux         *runtime.ServeMux
 		ctx         context.Context
@@ -36,55 +46,50 @@ func main() {
 	runtime.OtherErrorHandler = grpc_error.CustomOtherHTTPError //自定义HTTP错误
 	runtime.DefaultContextTimeout = time.Second * 10            //默认超时
 
-	config_gw := new(client.Config)
-	config_gw.Name = "example"
-	config_gw.Path = "/qsf.service.v1"
-	config_gw.EtcdConfig = etcd.Config{
-		Endpoints: []string{
-			"http://127.0.0.1:2379",
-		},
-	}
-	config_gw.Token = "123456"
-	config_gw.TokenFunc = new(ExampleServiceCredential)
-	//初始化zipkin
-	collector_gw, err := zipkin.NewHTTPCollector("http://127.0.0.1:9411/api/v1/spans")
+	//配置zipkin（可选）
+	collector, err := zipkin.NewHTTPCollector(ZIPKIN_HTTP_ENDPOINT)
 	if err != nil {
-		panic(err)
-
+		log.Fatalf("zipkin.NewHTTPCollector err: %v", err)
 	}
-	defer collector_gw.Close()
-	tracer_gw, err := zipkin.NewTracer(
-		zipkin.NewRecorder(collector_gw, false, "127.0.0.1:0", "Gateway.V1"),
-		zipkin.ClientServerSameSpan(true),
-		zipkin.TraceID128Bit(true),
+	recorder := zipkin.NewRecorder(collector, true, ZIPKIN_RECORDER_HOST_PORT, "QSF.Api-Gateway")
+	tracer, err := zipkin.NewTracer(
+		recorder, zipkin.ClientServerSameSpan(false),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("zipkin.NewTracer err: %v", err)
 	}
-	opentracing.InitGlobalTracer(tracer_gw)
-	config_gw.ZipkinEnable = true
-	config_gw.ZipkinTrance = tracer_gw
-	//初始化zipkin
 
-	//开启熔断器
-	config_gw.BreakerEnable = true
+	//配置zipkin（可选）
+	//配置熔断器（可选）
+	breakerP := breaker.NewRateBreaker(BreakerRate, BreakMinSamples)
 
-	c_gw, err := client.NewClient(config_gw)
-	if err == nil {
-		err = spb.RegisterExampleServiceHandlerFromEndpoint(ctx, mux, "", c_gw.GrpcOpts)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		panic(err)
-	}
-	//启动APP2服务器（curl https://127.0.0.1:8082/v1/examples/2222 -k）
+	initExampleService(ctx, mux, breakerP, tracer)
+
 	http2Server.Handler = AuthHandle(mux) //自定义请求过滤器
 	http2Server.Addr = "0.0.0.0:8082"
 	http2.ConfigureServer(&http2Server, &http2.Server{})
-	err = http2Server.ListenAndServeTLS("./server.pem", "./server.key")
-	if err != nil {
-		panic(err)
+	go func() {
+		err = http2Server.ListenAndServeTLS("./server.pem", "./server.key")
+		if err != nil {
+			log.Fatalf("ListenAndServeTLS err: %v", err)
+		}
+	}()
+	client.HandleSignal(http2Server)
+}
+
+func initExampleService(ctx context.Context, mux *runtime.ServeMux, breaker *breaker.Breaker, tracer opentracing.Tracer) {
+	config := new(client.Config)
+	config.Name = "example"
+	config.AccessToken = "123456"                            //服务密钥
+	config.AccessTokenFunc = new(client.ServiceCredential)   //授权方法
+	config.RegistryAddrs = []string{"http://127.0.0.1:2379"} //etcd 注册中心
+	config.Breaker = breaker                                 //熔断器
+	config.Tracer = tracer
+	c, err := client.NewClient(config, true)
+	if err == nil {
+		err = spb.RegisterExampleServiceHandlerFromEndpoint(ctx, mux, "", c.GrpcOpts)
+	} else {
+		log.Fatalf("initExampleService err: %v", err)
 	}
 
 }
@@ -100,20 +105,4 @@ func AuthHandle(h http.Handler) http.Handler {
 		//TODO your codes
 		h.ServeHTTP(w, r)
 	})
-}
-
-type ExampleServiceCredential struct {
-	serviceToken string
-}
-
-func (c *ExampleServiceCredential) SetServiceToken(token string) {
-	c.serviceToken = token
-}
-func (c *ExampleServiceCredential) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
-	return map[string]string{
-		"authorization": "basic " + c.serviceToken,
-	}, nil
-}
-func (c *ExampleServiceCredential) RequireTransportSecurity() bool {
-	return false
 }

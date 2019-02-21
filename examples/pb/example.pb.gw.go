@@ -13,8 +13,8 @@ import (
 
 	"net/http"
 
-	"github.com/chuangyou/qsf2/plugin/gateway/runtime"
-	"github.com/chuangyou/qsf2/plugin/gateway/utilities"
+	"github.com/chuangyou/qsf/plugin/gateway/runtime"
+	"github.com/chuangyou/qsf/plugin/gateway/utilities"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"

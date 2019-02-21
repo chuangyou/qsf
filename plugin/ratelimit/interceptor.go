@@ -6,7 +6,7 @@ import (
 
 	"strconv"
 
-	"github.com/chuangyou/qsf2/grpc_error"
+	"github.com/chuangyou/qsf/grpc_error"
 )
 
 func UnaryServerInterceptor(bucket *Bucket) grpc.UnaryServerInterceptor {

@@ -5,7 +5,7 @@ import (
 
 	"net/http"
 
-	"github.com/chuangyou/qsf2/plugin/gateway/runtime"
+	"github.com/chuangyou/qsf/plugin/gateway/runtime"
 	dpb "github.com/golang/protobuf/ptypes/duration"
 	json "github.com/pquerna/ffjson/ffjson"
 	"golang.org/x/net/context"
@@ -20,6 +20,7 @@ type ErrorJson struct {
 	Details []interface{} `json:"details,omitempty"`
 }
 
+//503=服务不可用,500=服务内部错误,401=未登录,403=禁止访问（可带原因）,400=参数错误,429=并发限制,200=OK
 func CustomOtherHTTPError(w http.ResponseWriter, _ *http.Request, msg string, code int) {
 	w.WriteHeader(code)
 	if code == http.StatusNotFound {

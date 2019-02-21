@@ -1,7 +1,7 @@
 package breaker
 
 import (
-	"github.com/chuangyou/qsf2/grpc_error"
+	"github.com/chuangyou/qsf/grpc_error"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/chuangyou/qsf2/plugin/gateway/utilities"
+	"github.com/chuangyou/qsf/plugin/gateway/utilities"
 	"google.golang.org/grpc/grpclog"
 )
 

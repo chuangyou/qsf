@@ -26,7 +26,6 @@ func (er *EtcdResolver) Resolve(target string) (naming.Watcher, error) {
 	}
 	client, err := etcd3.New(er.Config)
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 

@@ -4,76 +4,55 @@ import (
 	"log"
 	"time"
 
-	"github.com/chuangyou/qsf2/client"
-	spb "github.com/chuangyou/qsf2/examples/pb"
-	etcd "github.com/coreos/etcd/clientv3"
-	"github.com/opentracing/opentracing-go"
+	"github.com/chuangyou/qsf/client"
+	spb "github.com/chuangyou/qsf/examples/pb"
+	"github.com/chuangyou/qsf/plugin/breaker"
 	zipkin "github.com/openzipkin/zipkin-go-opentracing"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc"
+)
+
+var (
+	BreakerRate     = float64(0.95)
+	BreakMinSamples = int64(100)
+)
+
+const (
+	ZIPKIN_HTTP_ENDPOINT      = "http://127.0.0.1:9411/api/v1/spans"
+	ZIPKIN_RECORDER_HOST_PORT = "127.0.0.1:0"
 )
 
 func main() {
-	//使用GRPC客户端调用
 	config := new(client.Config)
 	config.Name = "example"
-	config.Path = "/qsf.service.v1"
-	config.EtcdConfig = etcd.Config{
-		Endpoints: []string{
-			"http://127.0.0.1:2379",
-		},
-	}
-	config.Token = "123456"
-	config.TokenFunc = new(ExampleServiceCredential)
-	//初始化zipkin
-	collector, err := zipkin.NewHTTPCollector("http://127.0.0.1:9411/api/v1/spans")
-	if err != nil {
-		panic(err)
+	config.AccessToken = "123456"                                         //服务密钥
+	config.AccessTokenFunc = new(client.ServiceCredential)                //授权方法
+	config.RegistryAddrs = []string{"http://127.0.0.1:2379"}              //etcd 注册中心
+	config.Breaker = breaker.NewRateBreaker(BreakerRate, BreakMinSamples) //熔断器
 
+	//配置zipkin（可选）
+	collector, err := zipkin.NewHTTPCollector(ZIPKIN_HTTP_ENDPOINT)
+	if err != nil {
+		log.Fatalf("zipkin.NewHTTPCollector err: %v", err)
 	}
-	defer collector.Close()
+	recorder := zipkin.NewRecorder(collector, true, ZIPKIN_RECORDER_HOST_PORT, config.Name+".Client")
 	tracer, err := zipkin.NewTracer(
-		zipkin.NewRecorder(collector, false, "127.0.0.1:0", "Example.Client.V1"),
-		zipkin.ClientServerSameSpan(true),
-		zipkin.TraceID128Bit(true),
+		recorder, zipkin.ClientServerSameSpan(false),
 	)
 	if err != nil {
-		panic(err)
+		log.Fatalf("zipkin.NewTracer err: %v", err)
 	}
-	opentracing.InitGlobalTracer(tracer)
-	config.ZipkinEnable = true
-	config.ZipkinTrance = tracer
-	//初始化zipkin
+	config.Tracer = tracer
+	//配置zipkin（可选）
 
-	//开启熔断器
-	config.BreakerEnable = true
-	c, err := client.NewClient(config)
+	c, err := client.NewClient(config, false) //网关使用第二个参数为true
 	if err == nil {
-		conn, err := grpc.Dial("", c.GrpcOpts...)
-		if err == nil {
-			defer conn.Close()
-			pbc := spb.NewExampleServiceClient(conn)
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-			r, err := pbc.GetExample(ctx, &spb.GetExampleRequest{Value: ""})
+		pbc := spb.NewExampleServiceClient(c.GrpcConn)
+		defer c.GrpcConn.Close()
+		time.Sleep(time.Second * 1)
+		for {
+			r, err := pbc.GetExample(context.Background(), &spb.GetExampleRequest{Value: "ddd"})
 			log.Println(r.GetValue(), err)
+			time.Sleep(time.Second * 1)
 		}
 	}
-
-}
-
-type ExampleServiceCredential struct {
-	serviceToken string
-}
-
-func (c *ExampleServiceCredential) SetServiceToken(token string) {
-	c.serviceToken = token
-}
-func (c *ExampleServiceCredential) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
-	return map[string]string{
-		"authorization": "basic " + c.serviceToken,
-	}, nil
-}
-func (c *ExampleServiceCredential) RequireTransportSecurity() bool {
-	return false
 }

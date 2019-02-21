@@ -8,7 +8,7 @@ import (
 
 	"context"
 
-	"github.com/chuangyou/qsf2/plugin/gateway/runtime/internal"
+	"github.com/chuangyou/qsf/plugin/gateway/runtime/internal"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"google.golang.org/grpc/codes"

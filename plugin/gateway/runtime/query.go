@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chuangyou/qsf2/plugin/gateway/utilities"
+	"github.com/chuangyou/qsf/plugin/gateway/utilities"
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc/grpclog"
 )
