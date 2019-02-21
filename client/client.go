@@ -12,6 +12,7 @@ import (
 	"github.com/chuangyou/qsf/constant"
 	"github.com/chuangyou/qsf/plugin/breaker"
 	registry "github.com/chuangyou/qsf/plugin/loadbalance/registry/etcd"
+	"github.com/chuangyou/qsf/plugin/prometheus"
 	"github.com/chuangyou/qsf/plugin/tracing"
 	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/grpc-ecosystem/go-grpc-middleware"
@@ -28,7 +29,7 @@ type Config struct {
 	RegistryAddrs   []string            //服务注册地址
 	Breaker         *breaker.Breaker    //熔断器
 	Tracer          opentracing.Tracer  //服务tracer
-
+	GrpcMetrics     *grpc_prometheus.ClientMetrics
 }
 type Client struct {
 	GrpcConn *grpc.ClientConn
@@ -37,10 +38,11 @@ type Client struct {
 
 func NewClient(config *Config, isGateway bool) (client *Client, err error) {
 	var (
-		r        naming.Resolver
-		b        grpc.Balancer
-		grpcOpt  grpc.DialOption
-		grpcOpts []grpc.DialOption
+		r                        naming.Resolver
+		b                        grpc.Balancer
+		grpcOpts                 []grpc.DialOption
+		unaryClientInterceptors  []grpc.UnaryClientInterceptor
+		streamClientInterceptors []grpc.StreamClientInterceptor
 	)
 	if config.Name == "" || len(config.RegistryAddrs) == 0 {
 		err = errors.New("service config data error")
@@ -77,20 +79,24 @@ func NewClient(config *Config, isGateway bool) (client *Client, err error) {
 	grpcOpts = append(grpcOpts, grpc.WithBalancer(b))
 
 	if config.Breaker != nil {
-		grpcOpt = grpc.WithUnaryInterceptor(
-			grpc_middleware.ChainUnaryClient(
-				breaker.UnaryClientInterceptor(config.Breaker),
-			),
-		)
-		grpcOpts = append(grpcOpts, grpcOpt)
+		unaryClientInterceptors = append(unaryClientInterceptors, breaker.UnaryClientInterceptor(config.Breaker))
+
 	}
 	if config.Tracer != nil {
-		grpcOpt = grpc.WithUnaryInterceptor(
-			grpc_middleware.ChainUnaryClient(
-				otgrpc.OpenTracingClientInterceptor(config.Tracer),
-			),
-		)
-		grpcOpts = append(grpcOpts, grpcOpt)
+		unaryClientInterceptors = append(unaryClientInterceptors, otgrpc.OpenTracingClientInterceptor(config.Tracer))
+		streamClientInterceptors = append(streamClientInterceptors, otgrpc.OpenTracingStreamClientInterceptor(config.Tracer))
+	}
+	if config.GrpcMetrics != nil {
+		unaryClientInterceptors = append(unaryClientInterceptors, config.GrpcMetrics.UnaryClientInterceptor())
+		streamClientInterceptors = append(streamClientInterceptors, config.GrpcMetrics.StreamClientInterceptor())
+	}
+	if len(unaryClientInterceptors) > 0 && len(streamClientInterceptors) > 0 {
+		grpcOpts = append(grpcOpts, grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(unaryClientInterceptors...)))
+		grpcOpts = append(grpcOpts, grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(streamClientInterceptors...)))
+	} else if len(unaryClientInterceptors) > 0 {
+		grpcOpts = append(grpcOpts, grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(unaryClientInterceptors...)))
+	} else if len(streamClientInterceptors) > 0 {
+		grpcOpts = append(grpcOpts, grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(streamClientInterceptors...)))
 	}
 	if isGateway {
 		client.GrpcOpts = grpcOpts
