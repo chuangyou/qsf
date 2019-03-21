@@ -28,14 +28,14 @@ import (
 )
 
 type Config struct {
-	Name              string             //服务名称
-	Addr              string             //服务地址
-	NodeId            string             //服务节点
-	RegistryAddrs     []string           //服务注册地址
-	AccessToken       string             //服务密钥
-	RateLimter        *ratelimit.Bucket  //服务限流器
-	MonitorListenAddr string             //服务监控地址
-	Tracer            opentracing.Tracer //服务tracer
+	Name              string                 //服务名称
+	Addr              string                 //服务地址
+	NodeId            string                 //服务节点
+	RegistryAddrs     []string               //服务注册地址
+	AccessToken       string                 //服务密钥
+	RateLimter        *ratelimit.RateLimiter //服务限流器
+	MonitorListenAddr string                 //服务监控地址
+	Tracer            opentracing.Tracer     //服务tracer
 }
 type Service struct {
 	Addr              string       //服务地址
@@ -50,14 +50,14 @@ func NewSevice(config *Config) (service *Service, err error) {
 		unaryServerInterceptors  []grpc.UnaryServerInterceptor
 		streamServerInterceptors []grpc.StreamServerInterceptor
 	)
-	if config.Name == "" || config.Addr == "" || len(config.RegistryAddrs) == 0 {
+	if config.Name == "" || config.Addr == "" || config.NodeId == "" || len(config.RegistryAddrs) == 0 {
 		err = errors.New("service config data error")
 		return
 	}
 	service = new(Service)
 	service.Addr = config.Addr
 	//register a service to etcd
-	err = service.registry(config.Name, config.Addr, config.NodeId, config.RegistryAddrs)
+	err = service.registry(config.RegistryAddrs, config.Name, config.Addr, config.NodeId)
 	if err != nil {
 		return
 	}
@@ -107,7 +107,7 @@ func NewSevice(config *Config) (service *Service, err error) {
 	return
 
 }
-func (s *Service) registry(serviceName, serviceAddr, serviceNodeId string, registryAddrs []string) (err error) {
+func (s *Service) registry(registryAddrs []string, serviceName, serviceAddr, serviceNodeId string) (err error) {
 	var (
 		registry *etcd_registry.EtcdReigistry
 	)
@@ -122,6 +122,7 @@ func (s *Service) registry(serviceName, serviceAddr, serviceNodeId string, regis
 			NodeID:      serviceNodeId,
 			NData: etcd_registry.NodeData{
 				Addr: serviceAddr,
+				//Metadata: map[string]string{"service_version": serviceVersion},
 			},
 			Ttl: 10 * time.Second,
 		})
@@ -191,10 +192,10 @@ func (s *Service) AuthFunc(ctx context.Context) (context.Context, error) {
 		return nil, err
 	}
 	if accessToken == "" {
-		return nil, grpc_error.Unauthenticated()
+		return nil, grpc_error.Internal()
 	}
 	if accessToken != s.AccessToken {
-		return nil, grpc_error.PermissionDenied("服务AccessToken错误！")
+		return nil, grpc_error.Internal()
 	}
 	return ctx, nil
 }

@@ -44,7 +44,7 @@ QSF2.0是基于GRPC生态圈打造的一个简单、易用、功能强大的服�
 
 5、安装QSF
 
-    go get github.com/chuangyou/qsf
+    go get gitee.com/fjcyrd/qsf
     
 6、QSF2.0与QSF的区别
 
@@ -53,4 +53,4 @@ QSF2.0是基于GRPC生态圈打造的一个简单、易用、功能强大的服�
  - 所有组件可以一键配置
  - 具体请参考  [examples][1]
 
-  [1]: https://github.com/chuangyou/qsf/tree/master/examples
+  [1]: https://gitee.com/fjcyrd/qsf/tree/master/examples

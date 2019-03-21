@@ -9,10 +9,13 @@ import (
 	spb "github.com/chuangyou/qsf/examples/pb"
 	"github.com/chuangyou/qsf/grpc_error"
 	"github.com/chuangyou/qsf/plugin/breaker"
-	"github.com/chuangyou/qsf/plugin/gateway/runtime"
+	"github.com/chuangyou/qsf/plugin/prometheus"
 	"github.com/golang/protobuf/proto"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/opentracing/opentracing-go"
 	zipkin "github.com/openzipkin/zipkin-go-opentracing"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/net/context"
 	"golang.org/x/net/http2"
 	"google.golang.org/grpc/metadata"
@@ -60,10 +63,17 @@ func main() {
 	}
 
 	//配置zipkin（可选）
-	//配置熔断器（可选）
-	breakerP := breaker.NewRateBreaker(BreakerRate, BreakMinSamples)
 
-	initExampleService(ctx, mux, breakerP, tracer)
+	breakerBucket := breaker.NewRateBreaker(BreakerRate, BreakMinSamples) //配置熔断器（可选）
+
+	//配置prometheus(client-side)
+	prometheusRegistry := prometheus.NewRegistry()
+	grpcMetrics := grpc_prometheus.NewClientMetrics()
+	prometheusRegistry.MustRegister(grpcMetrics)
+	grpcMetrics.EnableClientHandlingTimeHistogram()
+	//配置prometheus(client-side)
+
+	initExampleService(ctx, mux, breakerBucket, tracer, grpcMetrics)
 
 	http2Server.Handler = AuthHandle(mux) //自定义请求过滤器
 	http2Server.Addr = "0.0.0.0:8082"
@@ -74,17 +84,35 @@ func main() {
 			log.Fatalf("ListenAndServeTLS err: %v", err)
 		}
 	}()
+	//启动prometheus(client-side)
+	go func() {
+		httpServer := &http.Server{
+			Handler: promhttp.HandlerFor(prometheusRegistry, promhttp.HandlerOpts{}),
+			Addr:    "0.0.0.0:9094",
+		}
+		if err := httpServer.ListenAndServe(); err != nil {
+			log.Fatal("Unable to start a http server.")
+		}
+	}()
+	//启动prometheus(client-side)
+
 	client.HandleSignal(http2Server)
 }
 
-func initExampleService(ctx context.Context, mux *runtime.ServeMux, breaker *breaker.Breaker, tracer opentracing.Tracer) {
+func initExampleService(ctx context.Context,
+	mux *runtime.ServeMux,
+	breaker *breaker.Breaker,
+	tracer opentracing.Tracer,
+	grpcMetrics *grpc_prometheus.ClientMetrics) {
+
 	config := new(client.Config)
 	config.Name = "example"
 	config.AccessToken = "123456"                            //服务密钥
 	config.AccessTokenFunc = new(client.ServiceCredential)   //授权方法
 	config.RegistryAddrs = []string{"http://127.0.0.1:2379"} //etcd 注册中心
 	config.Breaker = breaker                                 //熔断器
-	config.Tracer = tracer
+	config.Tracer = tracer                                   //tracer
+	config.GrpcMetrics = grpcMetrics                         //prometheus
 	c, err := client.NewClient(config, true)
 	if err == nil {
 		err = spb.RegisterExampleServiceHandlerFromEndpoint(ctx, mux, "", c.GrpcOpts)
@@ -94,7 +122,7 @@ func initExampleService(ctx context.Context, mux *runtime.ServeMux, breaker *bre
 
 }
 func MetaDataJoin(ctx context.Context, r *http.Request) metadata.MD {
-	return metadata.New(map[string]string{"qsf-userid": "uid"})
+	return metadata.New(map[string]string{"QSF-UserId": "uid"})
 }
 func ForwardResponseFilter(ctx context.Context, w http.ResponseWriter, resp proto.Message) error {
 	w.Header().Del("Grpc-Metadata-Content-Type")
@@ -103,6 +131,7 @@ func ForwardResponseFilter(ctx context.Context, w http.ResponseWriter, resp prot
 func AuthHandle(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		//TODO your codes
+		log.Println("客户端信息", r.UserAgent(), r.Proto)
 		h.ServeHTTP(w, r)
 	})
 }

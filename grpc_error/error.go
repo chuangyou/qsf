@@ -5,8 +5,8 @@ import (
 
 	"net/http"
 
-	"github.com/chuangyou/qsf/plugin/gateway/runtime"
 	dpb "github.com/golang/protobuf/ptypes/duration"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	json "github.com/pquerna/ffjson/ffjson"
 	"golang.org/x/net/context"
 	epb "google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -22,10 +22,14 @@ type ErrorJson struct {
 
 //503=服务不可用,500=服务内部错误,401=未登录,403=禁止访问（可带原因）,400=参数错误,429=并发限制,200=OK
 func CustomOtherHTTPError(w http.ResponseWriter, _ *http.Request, msg string, code int) {
-	w.WriteHeader(code)
 	if code == http.StatusNotFound {
+		w.WriteHeader(code)
+		w.Write([]byte("{\"code\":" + strconv.Itoa(int(codes.NotFound)) + ",\"message\":\"" + codes.NotFound.String() + "\"}"))
+	} else if code == http.StatusMethodNotAllowed {
+		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("{\"code\":" + strconv.Itoa(int(codes.NotFound)) + ",\"message\":\"" + codes.NotFound.String() + "\"}"))
 	} else {
+		w.WriteHeader(code)
 		w.Write([]byte(msg))
 	}
 }
@@ -37,6 +41,7 @@ func CustomHTTPError(ctx context.Context, _ *runtime.ServeMux, marshaler runtime
 		errorJson   ErrorJson
 	)
 	httpStauts, errorJson = ParseError(err)
+	w.Header().Set("Content-Type", "application/json")
 	if httpStauts == 504 {
 		w.WriteHeader(runtime.HTTPStatusFromCode(codes.Unavailable))
 		w.Write([]byte("{\"code\":" + strconv.Itoa(int(codes.Unavailable)) + ",\"error\":\"" + codes.Unavailable.String() + "\"}"))
@@ -96,8 +101,17 @@ func InvalidArgument(field string, description string) error {
 	}
 }
 
+//404 NotFound 未找到资源
+func NotFound() error {
+	var (
+		st *status.Status
+	)
+	st = status.New(codes.NotFound, codes.NotFound.String())
+	return st.Err()
+}
+
 //429 RESOURCE_EXHAUSTED  超过资源限额或频率限制
-func ResourceExhausted(subject, description string) error {
+func ResourceExhausted(subject, description string, secounds int64) error {
 	var (
 		st       *status.Status
 		detSt    *status.Status
@@ -113,7 +127,7 @@ func ResourceExhausted(subject, description string) error {
 		},
 	},
 		&epb.RetryInfo{
-			RetryDelay: &dpb.Duration{Seconds: 30},
+			RetryDelay: &dpb.Duration{Seconds: secounds},
 		},
 	)
 	if detStErr == nil {

@@ -1,5 +1,5 @@
 syntax = "proto3";
-package qsfservice.example.v1;
+package chuangyou.touyuan.example.v1;
 import "google/api/annotations.proto";
  message Example {
    string value = 1;
@@ -10,7 +10,7 @@ import "google/api/annotations.proto";
  service ExampleService {
   rpc GetExample(GetExampleRequest) returns (Example) {
     option (google.api.http) = {
-      get: "/v1/examples/{value}"
+      get: "/v1/examples";
     };
   }
  }

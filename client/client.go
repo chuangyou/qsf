@@ -77,10 +77,8 @@ func NewClient(config *Config, isGateway bool) (client *Client, err error) {
 	//loadbalance
 	b = grpc.RoundRobin(r)
 	grpcOpts = append(grpcOpts, grpc.WithBalancer(b))
-
 	if config.Breaker != nil {
 		unaryClientInterceptors = append(unaryClientInterceptors, breaker.UnaryClientInterceptor(config.Breaker))
-
 	}
 	if config.Tracer != nil {
 		unaryClientInterceptors = append(unaryClientInterceptors, otgrpc.OpenTracingClientInterceptor(config.Tracer))
