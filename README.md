@@ -17,11 +17,7 @@ QSF2.0是基于GRPC生态圈打造的一个简单、易用、功能强大的服�
 > * API网关
         目前接入GRPC-GATEWAY。
 # 快速开始
-1、安装GRPC-GO
-
-    go get -u google.golang.org/grpc
-
-2、安装ProtocolBuffers
+1、安装ProtocolBuffers
 
     mkdir tmp
     cd tmp
@@ -33,24 +29,24 @@ QSF2.0是基于GRPC生态圈打造的一个简单、易用、功能强大的服�
     make check
     sudo make install
     
-3、安装proto,protoc-gen-go
+2、安装proto,protoc-gen-go
 
     go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
 
-4、安装GRPC-API-GATEWAY（用于生成网关代码，具体请参考grpc-gateway生成方式）
+3、安装GRPC-API-GATEWAY（用于生成网关代码，具体请参考grpc-gateway生成方式）
 
     go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
     go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 
-5、安装QSF
+4、安装QSF
 
-    go get gitee.com/fjcyrd/qsf
+    go get github.com/chuangyou/qsf
     
-6、QSF2.0与QSF的区别
+5、QSF2.0与QSF的区别
 
  - 封装底层实现
  - 调用简单
  - 所有组件可以一键配置
  - 具体请参考  [examples][1]
 
-  [1]: https://gitee.com/fjcyrd/qsf/tree/master/examples
+  [1]: https://github.com/chuangyou/qsf/tree/master/examples
